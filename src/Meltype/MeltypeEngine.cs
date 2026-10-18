@@ -591,9 +591,11 @@ internal sealed class MeltypeEngine : ISessionEnvironment, IDisposable
             if (_snippet.PassesThrough(snippetChar, _line.Text)) return false;
         }
         // 先頭か空白の直後の /command・$skill・@ファイル名 は、名前の終わり (空白) まで変換せずにそのままアプリへ渡す (#193)。
-        // かな入力では / などのキーはかな (め) なので対象にしない。
+        // かな入力では / などのキーはかな (め) なので対象にしない。「/ キーで中黒」が ON の日本語入力時は先頭の / も中黒にする。
         if (!reconvert && settings.SigilWordsDirect && (_keyboardDirect || settings.InputStyle != InputStyle.Kana) &&
-            KeyText.CharFromKey(e.Vk, e.Scan, false) is { } typed && _sigil.PassesThrough(typed, _line.Text))
+            KeyText.CharFromKey(e.Vk, e.Scan, false) is { } typed &&
+            !(typed == '/' && !_keyboardDirect && settings.SlashAsMiddleDot && !_sigil.IsActive) &&
+            _sigil.PassesThrough(typed, _line.Text))
         {
             if (!_sigil.IsActive) Log.Info($"{typed} で始まる語: 空白までそのまま入力します");
             return false;

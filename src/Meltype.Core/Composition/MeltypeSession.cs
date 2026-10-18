@@ -325,6 +325,8 @@ public sealed class MeltypeSession
     /// </summary>
     public void CaretMoved(int passedVk, bool control)
     {
+        if (control || passedVk == 0) _sigil.Lose();
+        else _sigil.OnKey(passedVk, null);
         if (!_codeJapanese) return;
         var moved = control || passedVk is VirtualKeys.Tab or (>= 0x21 and <= 0x28) or 0x2E || !CodeTerminal && passedVk == 0;
         if (!moved) return;
@@ -381,7 +383,10 @@ public sealed class MeltypeSession
             return Track(_host.Result(consumed: false), vk, ch, modifier);
         }
         // 先頭か空白の直後の /command・$skill・@ファイル名 は、変換せずにそのままアプリへ渡す (#193)。
-        if (!modifier && !_controller.IsComposing && ch is { } c && _settings().SigilWordsDirect && _sigil.PassesThrough(c, before))
+        // ただし「/ キーで中黒」が ON の日本語入力時は、先頭の / も中黒 (・) として変換ボックスに入れる。
+        if (!modifier && !_controller.IsComposing && ch is { } c && settings.SigilWordsDirect &&
+            !(c == '/' && !Direct && settings.SlashAsMiddleDot && settings.InputStyle != InputStyle.Kana && !_sigil.IsActive) &&
+            _sigil.PassesThrough(c, before))
         {
             if (CodeInput) TrackCodeKey(vk, ch, modifier);
             return Track(_host.Result(consumed: false), vk, ch, modifier);

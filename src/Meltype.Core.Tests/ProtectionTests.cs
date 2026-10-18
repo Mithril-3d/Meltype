@@ -355,4 +355,17 @@ internal static class ProtectionTests
         // 保護した原文は学習記憶に残さない。
         Assert.True(languages.Get("https://example.com/?token=synthetic_test_only") is null, "保護原文を学習しない");
     }
+
+    [Test]
+    public static void SingleSlashBeforeRomaji_DoesNotLockIntoProtectedPosixPath()
+    {
+        // SigilWordsDirect = false のときに /nihongo や 、/ashita と打っても PosixPath 保護区間に固定されず日本語になる。
+        var session = Create();
+        TypeText(session, "/nihongo");
+        Assert.Equal("/にほんご", TypeOne(session, '\n').Commits.Single().Text);
+
+        var session2 = Create();
+        TypeText(session2, "kyouha,/ashita");
+        Assert.Equal("きょうは、/あした", TypeOne(session2, '\n').Commits.Single().Text);
+    }
 }

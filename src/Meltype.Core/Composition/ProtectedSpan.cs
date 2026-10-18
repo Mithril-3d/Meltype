@@ -182,12 +182,13 @@ public static class ProtectedSpanScanner
             }
             return null;
         }
-        // 先頭の / (/// や単独の / は対象外)
+        // 先頭の / (/// や単独の /、区切りの / の後ろの普通のローマ字語 /nihongo は対象外。2 つ目の / や記号・数字を含むパスを対象にする)
         if (raw[start] == '/' && start + 1 < raw.Length && IsPathElementStart(raw[start + 1]))
         {
             var end = start + 1;
             while (end < raw.Length && IsPathChar(raw[end])) end++;
-            return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
+            if (!raw[(start + 1)..end].All(c => char.IsAsciiLetter(c) || c == '-'))
+                return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
         }
         return null;
     }

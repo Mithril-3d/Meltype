@@ -737,6 +737,7 @@ public sealed class CompositionController
         if (VirtualKeys.IsHankakuZenkaku(vk))
         {
             SetMode(_text.IsAlphanumeric ? DisplayMode.Hiragana : DisplayMode.HalfWidthAlphanumeric);
+            _modeByKey = true;
             return;
         }
 

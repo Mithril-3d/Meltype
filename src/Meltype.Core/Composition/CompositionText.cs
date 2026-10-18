@@ -222,9 +222,10 @@ public sealed class CompositionText
                 return;
             }
         }
-        // / キーで中黒 (設定): かなのすぐ後ろの / は ・ (いろん/ますく → いろん・ますく)。英字・数字の後ろ (and/or、3/4、URL)
-        // と入力の始め (/help) は / のまま (issue #122)。英語の区間に入ったときは、打ったままの / を見せる。
-        if (c == '/' && SlashAsMiddleDot() && _units.Count > 0 && _units[^1].Kana is [.., var kana] && kana is >= 'ぁ' and <= 'ヺ' or 'ー')
+        // / キーで中黒 (設定): 入力の始めや、かな・中黒・閉じ括弧のすぐ後ろの / は ・ (いろん/ますく → いろん・ますく)。
+        // 英字・数字の後ろ (and/or、3/4、URL) は / のまま (issue #122)。英語の区間に入ったとき (/help など) は、打ったままの / を見せる。
+        if (c == '/' && SlashAsMiddleDot() &&
+            (_units.Count == 0 || _units[^1].Kana is [.., var kana] && kana is >= 'ぁ' and <= 'ヺ' or 'ー' or '・' or '」' or '』' or '）'))
         {
             _units.Add(new CompositionUnit("・", "/"));
             return;
@@ -728,7 +729,8 @@ public sealed class CompositionText
     /// </summary>
     private List<CompositionUnit>? HalfWidthOpeners(IReadOnlyList<CompositionSegment> segments)
     {
-        if (KanaInput || !_units.Any(u => Openers.ContainsKey(u.Raw) && u.Kana != u.Raw)) return null;
+        var hasLeadingSlashDot = _units is [{ Raw: "/", Kana: "・" }, ..];
+        if (KanaInput || (!hasLeadingSlashDot && !_units.Any(u => Openers.ContainsKey(u.Raw) && u.Kana != u.Raw))) return null;
         // 打った英字の 1 文字ずつが英語の区間か
         var english = new List<bool>();
         foreach (var segment in segments) foreach (var _ in segment.Raw) english.Add(segment.IsEnglish);
@@ -737,6 +739,17 @@ public sealed class CompositionText
         bool IsHalf(int i) => _units[i].Kana == _units[i].Raw || (offsets[i] < english.Count && english[offsets[i]]);
 
         List<CompositionUnit>? adjusted = null;
+        if (hasLeadingSlashDot)
+        {
+            var slashNextIsEnglish = _units.Count > 1
+                ? offsets[1] < english.Count && english[offsets[1]] && char.IsAsciiLetter(_units[1].Raw[0])
+                : Pending.Length > 0 && segments.Count > 0 && segments[^1].IsEnglish;
+            if (slashNextIsEnglish)
+            {
+                adjusted ??= [.. _units];
+                adjusted[0] = _units[0] with { Kana = "/" };
+            }
+        }
         for (var i = 0; i < _units.Count; i++)
         {
             if (!Openers.TryGetValue(_units[i].Raw, out var closer) || _units[i].Kana == _units[i].Raw) continue;
