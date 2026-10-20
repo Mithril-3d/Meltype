@@ -372,12 +372,17 @@ internal static class ProtectionTests
         var session2 = Create();
         TypeText(session2, "kyouha,/ashita");
         Assert.Equal("きょうは、/あした", TypeOne(session2, '\n').Commits.Single().Text);
+
+        // /Linux などルートディレクトリ以外の英単語も、1 階層パスとして誤保護されない。
+        var session3 = Create();
+        TypeText(session3, "/Linux");
+        Assert.NotEqual("/Linux", TypeOne(session3, '\n').Commits.Single().Text);
     }
 
     [Test]
     public static void SingleSlashBeforeRootPath_ProtectsPosixPath()
     {
-        // /home, /tmp などの代表的なルートディレクトリは保護区間として保護され、ローマ字かな化 (/ほめ 等) されない。
+        // /home, /tmp, /data などの代表的なルートディレクトリは保護区間として保護され、ローマ字かな化 (/ほめ 等) されない。
         var session = Create();
         TypeText(session, "/home");
         Assert.Equal("/home", TypeOne(session, '\n').Commits.Single().Text);
@@ -385,5 +390,9 @@ internal static class ProtectionTests
         var session2 = Create();
         TypeText(session2, "/tmp");
         Assert.Equal("/tmp", TypeOne(session2, '\n').Commits.Single().Text);
+
+        var session3 = Create();
+        TypeText(session3, "/data");
+        Assert.Equal("/data", TypeOne(session3, '\n').Commits.Single().Text);
     }
 }

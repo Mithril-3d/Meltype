@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 0924haruto12
-
-using Meltype.Detection;
-
 namespace Meltype.Composition;
 
 /// <summary>自動変換してはいけない区間の種類。</summary>
@@ -170,10 +167,8 @@ public static class ProtectedSpanScanner
     {
         "bin", "boot", "dev", "etc", "home", "lib", "lib64", "media", "mnt", "opt",
         "proc", "root", "run", "sbin", "srv", "sys", "tmp", "usr", "var",
-        "Users", "Applications", "Library", "System", "Volumes", "private"
+        "Users", "Applications", "Library", "System", "Volumes", "private", "Network", "cores", "data"
     };
-
-    private static readonly RomajiDetector Romaji = new();
 
     // ---- POSIX パス ----
     private static ProtectedSpan? TryPosixPath(string raw, int start)
@@ -206,15 +201,8 @@ public static class ProtectedSpanScanner
                 return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
             }
             // 1 階層かつ英字・ハイフンのみの場合:
-            // 実在するルートディレクトリ (/home, /tmp, /etc, /usr など) は保護する。
+            // 実在する代表的なルートディレクトリ (/home, /tmp, /etc, /usr など) は保護する。
             if (CommonRootDirectories.Contains(segment))
-            {
-                return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
-            }
-            // ローマ字として読めない語 (子音連続など) もパスとみなして保護する。
-            // 逆に、ローマ字として読める語 (/nihongo, /ashita など) はかな変換できるように保護対象外とする。
-            var analysis = Romaji.Analyze(segment.Replace("-", ""));
-            if (!analysis.IsValid || analysis.Partial.Length > 0)
             {
                 return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
             }
