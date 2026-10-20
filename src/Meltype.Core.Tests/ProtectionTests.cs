@@ -108,7 +108,7 @@ internal static class ProtectionTests
 
     // ---- 確定契約 (MeltypeSession は Linux/Mac アダプターと同じ経路) ----
 
-    private static MeltypeSession Create(LanguageMemory? languages = null, bool spaceAroundEnglish = false)
+    private static MeltypeSession Create(LanguageMemory? languages = null, bool spaceAroundEnglish = false, bool slashAsMiddleDot = false)
     {
         CompositionTests.Detector.SpellChecker = Detection.BuiltInWordChecker.Shared;
         // 製品の CreateDefault と同じく、候補辞書・誤字補正・文脈辞書を入れる (実経路と同じ条件で検査する)。
@@ -121,9 +121,10 @@ internal static class ProtectionTests
             RomajiTypos = RomajiTypoCorrector.Load(CompositionTests.Detector.Romaji),
             Languages = languages,
             SpaceAroundEnglish = () => spaceAroundEnglish,
+            SlashAsMiddleDot = () => slashAsMiddleDot,
         };
         // 行頭の @・/ (#193 の「そのままアプリへ渡す」) を切り、変換ボックスの中の保護区間の扱いを確かめる。
-        return new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(), options, () => new Settings { SigilWordsDirect = false });
+        return new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(), options, () => new Settings { SigilWordsDirect = false, SlashAsMiddleDot = slashAsMiddleDot });
     }
 
     private static SessionResult TypeOne(MeltypeSession session, char c)
@@ -394,5 +395,24 @@ internal static class ProtectionTests
         var session3 = Create();
         TypeText(session3, "/data");
         Assert.Equal("/data", TypeOne(session3, '\n').Commits.Single().Text);
+    }
+
+    [Test]
+    public static void SingleSlashBeforeRootPath_WithSlashAsMiddleDot_ProtectsPosixPath()
+    {
+        // SlashAsMiddleDot = true のときでも、/home や /tmp などは ・ほめ にならず /home として保護される。
+        var session = Create(slashAsMiddleDot: true);
+        TypeText(session, "/home");
+        Assert.Equal("/home", TypeOne(session, '\n').Commits.Single().Text);
+
+        // 一方で、/Linux は中黒のまま ・Linux になる。
+        var session2 = Create(slashAsMiddleDot: true);
+        TypeText(session2, "/Linux");
+        Assert.Equal("・Linux", TypeOne(session2, '\n').Commits.Single().Text);
+
+        // /nihongo も中黒のまま ・にほんご になる。
+        var session3 = Create(slashAsMiddleDot: true);
+        TypeText(session3, "/nihongo");
+        Assert.Equal("・にほんご", TypeOne(session3, '\n').Commits.Single().Text);
     }
 }
