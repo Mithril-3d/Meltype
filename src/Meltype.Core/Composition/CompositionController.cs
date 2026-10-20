@@ -737,6 +737,7 @@ public sealed class CompositionController
         if (VirtualKeys.IsHankakuZenkaku(vk))
         {
             SetMode(_text.IsAlphanumeric ? DisplayMode.Hiragana : DisplayMode.HalfWidthAlphanumeric);
+            // 半角/全角キーで変換ボックスの文字種を切り替えたあと、F6〜F10 と同様に次の打鍵で確定して新しい入力を始める。
             _modeByKey = true;
             return;
         }

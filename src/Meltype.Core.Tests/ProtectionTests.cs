@@ -30,6 +30,10 @@ internal static class ProtectionTests
                      ("C:/Users/taro/project", ProtectedKind.WindowsPath),
                      ("\\\\server\\share\\nihongo.txt", ProtectedKind.WindowsPath),
                      ("@User_123", ProtectedKind.Mention),
+                     ("/home", ProtectedKind.PosixPath),
+                     ("/tmp", ProtectedKind.PosixPath),
+                     ("/etc", ProtectedKind.PosixPath),
+                     ("/usr", ProtectedKind.PosixPath),
                  })
         {
             var spans = ProtectedSpanScanner.Scan(raw);
@@ -49,6 +53,7 @@ internal static class ProtectionTests
                  {
                      "a/b", "1/2", "///", "@", "/", ":", "kyouhagithubnipushshita",
                      "konnichiwa.", "OPENAI_API_KEY", "camelCase", "2026-10-05", "hello", "upah_setu",
+                     "/nihongo", "/ashita",
                  })
         {
             var spans = ProtectedSpanScanner.Scan(raw);
@@ -367,5 +372,18 @@ internal static class ProtectionTests
         var session2 = Create();
         TypeText(session2, "kyouha,/ashita");
         Assert.Equal("きょうは、/あした", TypeOne(session2, '\n').Commits.Single().Text);
+    }
+
+    [Test]
+    public static void SingleSlashBeforeRootPath_ProtectsPosixPath()
+    {
+        // /home, /tmp などの代表的なルートディレクトリは保護区間として保護され、ローマ字かな化 (/ほめ 等) されない。
+        var session = Create();
+        TypeText(session, "/home");
+        Assert.Equal("/home", TypeOne(session, '\n').Commits.Single().Text);
+
+        var session2 = Create();
+        TypeText(session2, "/tmp");
+        Assert.Equal("/tmp", TypeOne(session2, '\n').Commits.Single().Text);
     }
 }

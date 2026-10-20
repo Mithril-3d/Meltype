@@ -30,6 +30,13 @@ public sealed class SigilWord
     public bool IsActive { get { lock (_gate) return _length > 0; } }
 
     /// <summary>
+    /// ホスト (TSF やエディタ) が直前の文脈 (before) を渡す際、一定文字数 (例: 16〜32 文字) で切り詰めることがある。
+    /// 長い名前を入力中に先頭の記号 (/・$・@) が切り詰め境界より手前に押し出された場合でも、
+    /// 切り詰められたバッファ全体が名前文字で満たされていれば名前の途中とみなすための閾値。
+    /// </summary>
+    private const int TruncatedBeforeThreshold = 20;
+
+    /// <summary>
     /// 変換ボックスが空のときに打った文字を、変換せずにそのままアプリへ渡すか。
     /// before はホストが教えてくれたキャレットの前の文字列 (分からなければ null)。渡した文字も <see cref="Append"/> で伝える。
     /// </summary>
@@ -46,7 +53,8 @@ public sealed class SigilWord
                     _sawBefore = true;
                     var i = before.Length;
                     while (i > 0 && IsNameChar(before[i - 1])) i--;
-                    if (!IsNameChar(before[^1]) || !(IsSigil(before[i]) || (i == 0 && before.Length >= 20)))
+                    // 記号で始まっているか、あるいは before が切り詰められて記号が枠外に押し出された (バッファ全体が名前文字) かを判定する
+                    if (!IsNameChar(before[^1]) || !(IsSigil(before[i]) || (i == 0 && before.Length >= TruncatedBeforeThreshold)))
                     {
                         _length = 0;
                         _sawBefore = false;

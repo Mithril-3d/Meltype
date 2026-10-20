@@ -594,7 +594,7 @@ internal sealed class MeltypeEngine : ISessionEnvironment, IDisposable
         // かな入力では / などのキーはかな (め) なので対象にしない。「/ キーで中黒」が ON の日本語入力時は先頭の / も中黒にする。
         if (!reconvert && settings.SigilWordsDirect && (_keyboardDirect || settings.InputStyle != InputStyle.Kana) &&
             KeyText.CharFromKey(e.Vk, e.Scan, false) is { } typed &&
-            !(typed == '/' && !_keyboardDirect && settings.SlashAsMiddleDot && !_sigil.IsActive) &&
+            !(typed == '/' && !_keyboardDirect && settings.SlashAsMiddleDot && settings.InputStyle != InputStyle.Kana && !_sigil.IsActive) &&
             _sigil.PassesThrough(typed, _line.Text))
         {
             if (!_sigil.IsActive) Log.Info($"{typed} で始まる語: 空白までそのまま入力します");

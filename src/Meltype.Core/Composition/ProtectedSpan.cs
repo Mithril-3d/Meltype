@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 0924haruto12
 
+using Meltype.Detection;
+
 namespace Meltype.Composition;
 
 /// <summary>自動変換してはいけない区間の種類。</summary>
@@ -163,6 +165,16 @@ public static class ProtectedSpanScanner
 
     private static bool IsMentionChar(char c) => char.IsAsciiLetterOrDigit(c) || c is '_' or '-';
 
+    // POSIX / macOS の代表的なルートディレクトリ名。1 階層の /home や /tmp などは保護対象にする。
+    private static readonly HashSet<string> CommonRootDirectories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "bin", "boot", "dev", "etc", "home", "lib", "lib64", "media", "mnt", "opt",
+        "proc", "root", "run", "sbin", "srv", "sys", "tmp", "usr", "var",
+        "Users", "Applications", "Library", "System", "Volumes", "private"
+    };
+
+    private static readonly RomajiDetector Romaji = new();
+
     // ---- POSIX パス ----
     private static ProtectedSpan? TryPosixPath(string raw, int start)
     {
@@ -182,13 +194,30 @@ public static class ProtectedSpanScanner
             }
             return null;
         }
-        // 先頭の / (/// や単独の /、区切りの / の後ろの普通のローマ字語 /nihongo は対象外。2 つ目の / や記号・数字を含むパスを対象にする)
+        // 先頭の / (/// や単独の /、区切りの / の後ろの普通のローマ字語 /nihongo は対象外。2 つ目の / や記号・数字を含むパス、代表的なルートディレクトリを対象にする)
         if (raw[start] == '/' && start + 1 < raw.Length && IsPathElementStart(raw[start + 1]))
         {
             var end = start + 1;
             while (end < raw.Length && IsPathChar(raw[end])) end++;
-            if (!raw[(start + 1)..end].All(c => char.IsAsciiLetter(c) || c == '-'))
+            var segment = raw[(start + 1)..end];
+            // 2 つ目以降の / やドット・アンダースコアなどのパスらしい記号・数字を含むものは保護する (/home/user, /app.sh, /.config など)
+            if (segment.Contains('/') || segment.Contains('.') || segment.Contains('_') || segment.Any(char.IsAsciiDigit))
+            {
                 return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
+            }
+            // 1 階層かつ英字・ハイフンのみの場合:
+            // 実在するルートディレクトリ (/home, /tmp, /etc, /usr など) は保護する。
+            if (CommonRootDirectories.Contains(segment))
+            {
+                return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
+            }
+            // ローマ字として読めない語 (子音連続など) もパスとみなして保護する。
+            // 逆に、ローマ字として読める語 (/nihongo, /ashita など) はかな変換できるように保護対象外とする。
+            var analysis = Romaji.Analyze(segment.Replace("-", ""));
+            if (!analysis.IsValid || analysis.Partial.Length > 0)
+            {
+                return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
+            }
         }
         return null;
     }
