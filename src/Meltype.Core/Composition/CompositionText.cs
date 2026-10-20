@@ -973,11 +973,27 @@ public sealed class CompositionText
         // かな入力では "@" は濁点などのキーで、ローマ字の原文とは意味が違う。保護判定はローマ字入力だけにする。
         if (KanaInput) return [];
         var raw = Raw;
-        // 打ち始めの / を ・ にしたときは、続けて打った文字と合わせて / から始まるパス (/kyou) にしない。
+        // 打ち始めの / を ・ にしたときでも、原文全体 (先頭から) が代表的なルートディレクトリや複数階層パス (/home, /tmp, /a/b など)
+        // として正当に保護される場合は、パスとして保護する。
         var slash = _units is [{ Kana: "・", Raw: "/" }, ..];
         var key = slash ? "・" + raw : raw;
         if (_protectedCache is not null && _protectedCacheRaw == key) return _protectedCache;
-        _protectedCache = slash ? ProtectedSpanScanner.Scan(raw[1..]).Select(s => s with { Start = s.Start + 1 }).ToList() : ProtectedSpanScanner.Scan(raw);
+        if (slash)
+        {
+            var fullSpans = ProtectedSpanScanner.Scan(raw);
+            if (fullSpans.Count > 0 && fullSpans[0].Start == 0 && fullSpans[0].Kind is ProtectedKind.PosixPath or ProtectedKind.Url)
+            {
+                _protectedCache = fullSpans;
+            }
+            else
+            {
+                _protectedCache = ProtectedSpanScanner.Scan(raw[1..]).Select(s => s with { Start = s.Start + 1 }).ToList();
+            }
+        }
+        else
+        {
+            _protectedCache = ProtectedSpanScanner.Scan(raw);
+        }
         _protectedCacheRaw = key;
         return _protectedCache;
     }
