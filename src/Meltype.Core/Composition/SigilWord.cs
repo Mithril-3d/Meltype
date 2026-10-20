@@ -42,13 +42,24 @@ public sealed class SigilWord
     /// </summary>
     public bool PassesThrough(char c, string? before = null)
     {
+        // Discord は、空の入力欄でもキャレットの前に見えない文字 (U+FEFF) を返す。前の文字としては数えず、
+        // それだけなら入力欄の先頭と分かる (送信した後など)。
+        var invisibleOnly = !string.IsNullOrEmpty(before) && before.TrimEnd('\uFEFF', '\u200B').Length == 0;
+        if (invisibleOnly) before = "";
         lock (_gate)
         {
             if (_length > 0)
             {
-                // 名前の途中のはずなのに、キャレットの前が空白・名前に使わない文字・記号で始まらない語・消されて空になった:
+                // Discord などで見えない文字だけになった場合や、
+                // 名前の途中のはずなのにキャレットの前が空白・名前に使わない文字・記号で始まらない語・消されて空になった場合:
                 // 名前の後の空白・Enter・BackSpace などがこちらを通らずにアプリへ届いた (#242)。普通の入力に戻る。
-                if (!string.IsNullOrEmpty(before))
+                if (invisibleOnly)
+                {
+                    _length = 0;
+                    _sawBefore = false;
+                    _boundary = true;
+                }
+                else if (!string.IsNullOrEmpty(before))
                 {
                     _sawBefore = true;
                     var i = before.Length;
@@ -75,7 +86,8 @@ public sealed class SigilWord
             if (!IsSigil(c)) return false;
             // ホストが前の文字を教えてくれれば、そちらを使う。空 (入力欄の先頭) は、前の文字を打ったのを見ていないときだけ信じる
             // (前の文字を読めないアプリは空を返すことがある)。
-            if (!string.IsNullOrEmpty(before)) _boundary = char.IsWhiteSpace(before[^1]);
+            if (invisibleOnly) _boundary = true;
+            else if (!string.IsNullOrEmpty(before)) _boundary = char.IsWhiteSpace(before[^1]);
             else if (before is not null && _boundary is null) _boundary = true;
             return _boundary == true;
         }
