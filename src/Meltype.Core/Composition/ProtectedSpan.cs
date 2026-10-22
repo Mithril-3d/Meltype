@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 0924haruto12
+
 namespace Meltype.Composition;
 
 /// <summary>自動変換してはいけない区間の種類。</summary>
@@ -195,8 +196,8 @@ public static class ProtectedSpanScanner
             var end = start + 1;
             while (end < raw.Length && IsPathChar(raw[end])) end++;
             var segment = raw[(start + 1)..end];
-            // 2 つ目以降の / やドット・アンダースコアなどのパスらしい記号・数字を含むものは保護する (/home/user, /app.sh, /.config など)
-            if (segment.Contains('/') || segment.Contains('.') || segment.Contains('_') || segment.Any(char.IsAsciiDigit))
+            // 2 つ目以降の / や記号 (@, ., _ 等)・数字を含むパスは保護する (/home/user, /app.sh, /a@b, /.config など)
+            if (segment.Any(c => !char.IsAsciiLetter(c) && c != '-'))
             {
                 return new ProtectedSpan(start, end - start, ProtectedKind.PosixPath);
             }

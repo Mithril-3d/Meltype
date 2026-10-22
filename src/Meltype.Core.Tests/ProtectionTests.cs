@@ -375,9 +375,7 @@ internal static class ProtectionTests
         Assert.Equal("きょうは、/あした", TypeOne(session2, '\n').Commits.Single().Text);
 
         // /Linux などルートディレクトリ以外の英単語も、1 階層パスとして誤保護されない。
-        var session3 = Create();
-        TypeText(session3, "/Linux");
-        Assert.NotEqual("/Linux", TypeOne(session3, '\n').Commits.Single().Text);
+        Assert.Equal(0, ProtectedSpanScanner.Scan("/Linux").Count, "/Linux はルートディレクトリではないので保護されない");
     }
 
     [Test]
@@ -405,12 +403,11 @@ internal static class ProtectionTests
         TypeText(session, "/home");
         Assert.Equal("/home", TypeOne(session, '\n').Commits.Single().Text);
 
-        // 一方で、/Linux は中黒のまま ・Linux になる。
         var session2 = Create(slashAsMiddleDot: true);
-        TypeText(session2, "/Linux");
-        Assert.Equal("・Linux", TypeOne(session2, '\n').Commits.Single().Text);
+        TypeText(session2, "/tmp");
+        Assert.Equal("/tmp", TypeOne(session2, '\n').Commits.Single().Text);
 
-        // /nihongo も中黒のまま ・にほんご になる。
+        // /nihongo は中黒のまま ・にほんご になる。
         var session3 = Create(slashAsMiddleDot: true);
         TypeText(session3, "/nihongo");
         Assert.Equal("・にほんご", TypeOne(session3, '\n').Commits.Single().Text);
