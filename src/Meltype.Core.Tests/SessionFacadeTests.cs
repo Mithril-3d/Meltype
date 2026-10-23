@@ -292,6 +292,31 @@ internal static class SessionFacadeTests
     }
 
     [Test]
+    public static void TsfDirectMode_DigitsResetDirectEnglishWord()
+    {
+        var settings = new Settings { DirectModeAutoDetect = true };
+        var session = new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(),
+            new CompositionOptions
+            {
+                ClassifyDirect = (letters, _) => letters == "to" ? Detection.Verdict.Japanese
+                    : letters.Length >= 3 ? Detection.Verdict.English
+                    : Detection.Verdict.Undecided,
+            },
+            () => settings, directModeDetection: true)
+        {
+            Direct = true,
+        };
+
+        Type(session, "mod");
+        session.HandleKey('5', '5', false, false, false, false);
+        Assert.True(!session.DirectEnglishWord, "数字を打ったら英単語の継続をリセットする");
+
+        var result = Type(session, "to", before: "mod5")[^1];
+        Assert.True(result.Consumed, "数字の後のローマ字も日本語判定される");
+        Assert.Equal("と", result.View?.Text, "日本語の変換中に切り替わる");
+    }
+
+    [Test]
     public static void KeysOutsideComposition_GoToTheApp()
     {
         var session = Create();
