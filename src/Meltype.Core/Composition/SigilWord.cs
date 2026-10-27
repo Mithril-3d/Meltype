@@ -161,7 +161,8 @@ public sealed class SigilWord
                 }
                 return;
             }
-            _boundary = null;
+            // 直前の素通し文字を BackSpace で消したときは、入力欄の先頭に戻った可能性があるため boundary をリセットする
+            _boundary = true;
         }
     }
 
@@ -193,7 +194,8 @@ public sealed class SigilWord
     {
         lock (_gate)
         {
-            _boundary = null;
+            // 直前の素通し文字を BackSpace で消したときは、入力欄の先頭に戻った可能性があるため boundary をリセットする
+            _boundary = true;
             _length = 0;
             _sawBefore = false;
         }

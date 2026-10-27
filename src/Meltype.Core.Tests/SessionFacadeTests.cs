@@ -864,6 +864,16 @@ internal static class SessionFacadeTests
         var codeSlash = Type(codeSession, "/", before: "> ")[0];
         Assert.True(codeSlash.Consumed, "コード入力欄でも / キーで中黒が ON なら中黒として入る");
         Assert.Equal("・", codeSlash.View?.Text);
+
+        // 数字を直接入力した後に Backspace で消して空に戻った場合も、状態を引きずらず中黒になること
+        var digitSession = new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(),
+            new CompositionOptions { Candidates = CandidateDictionary.Load(null), SlashAsMiddleDot = () => true },
+            () => new Settings { SlashAsMiddleDot = true, SigilWordsDirect = true });
+        Type(digitSession, "1", before: "");
+        digitSession.HandleKey(VirtualKeys.Back, '\b', false, false, false, false);
+        var slashAfterDigit = Type(digitSession, "/", before: "")[0];
+        Assert.True(slashAfterDigit.Consumed, "数字を消して空になった後の / も中黒になる");
+        Assert.Equal("・", slashAfterDigit.View?.Text);
     }
 
     [Test]
