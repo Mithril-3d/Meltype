@@ -838,7 +838,8 @@ internal static class SessionFacadeTests
         session = Create();
         Assert.True(!Type(session, "@", before: "")[0].Consumed, "先頭の @ は素通し");
         session.CaretMoved(0, false);
-        Assert.Equal("か", Type(session, "ka", before: "something")[^1].View?.Text);
+        // before が null (直前テキストが取得できない環境) でも _sigil が解除されて日本語入力に戻ること
+        Assert.Equal("か", Type(session, "ka", before: null)[^1].View?.Text);
     }
 
     [Test]
@@ -851,6 +852,18 @@ internal static class SessionFacadeTests
         Assert.True(slash.Consumed, "/ キーで中黒が ON なら先頭の / も変換ボックスへ入る");
         Assert.Equal("・", slash.View?.Text);
         Assert.Equal("・", Type(session, "\n")[0].Commits.Single().Text);
+
+        // コード欄 (CodeInput = true) かつ直前に記号がある場合 (before = "> ")
+        // MarkSlashAtStart() が働かない環境でも、中黒優先条件によって / が素通しされずに変換ボックスへ入ること
+        var codeSession = new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(),
+            new CompositionOptions { Candidates = CandidateDictionary.Load(null), SlashAsMiddleDot = () => true },
+            () => new Settings { SlashAsMiddleDot = true, SigilWordsDirect = true })
+        {
+            CodeInput = true,
+        };
+        var codeSlash = Type(codeSession, "/", before: "> ")[0];
+        Assert.True(codeSlash.Consumed, "コード入力欄でも / キーで中黒が ON なら中黒として入る");
+        Assert.Equal("・", codeSlash.View?.Text);
     }
 
     [Test]
