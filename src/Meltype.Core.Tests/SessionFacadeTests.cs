@@ -884,6 +884,14 @@ internal static class SessionFacadeTests
         var slashAfterNullDigit = Type(nullDigitSession, "/", before: null)[0];
         Assert.True(slashAfterNullDigit.Consumed, "before が null でも数字を消した後の / は中黒になる");
         Assert.Equal("・", slashAfterNullDigit.View?.Text);
+
+        // 直前が数字 (before: "1") であっても、SlashAsMiddleDot が ON なら中黒として表示されること (英語記号扱いされて / に戻らないこと)
+        var preDigitSession = new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(),
+            new CompositionOptions { Candidates = CandidateDictionary.Load(null), SlashAsMiddleDot = () => true },
+            () => new Settings { SlashAsMiddleDot = true, SigilWordsDirect = true });
+        var slashAfterPreDigit = Type(preDigitSession, "/", before: "1")[0];
+        Assert.True(slashAfterPreDigit.Consumed, "直前が数字でも中黒になる");
+        Assert.Equal("・", slashAfterPreDigit.View?.Text);
     }
 
     [Test]
