@@ -418,9 +418,9 @@ public sealed class MeltypeSession
         {
             return Track(_host.Result(consumed: false), vk, ch, modifier);
         }
-        // 文章の入力欄の / は、変換ボックスに ・ として入れる。Space で / にすると、続く名前はそのまま渡す。
-        if (!modifier && !_controller.IsComposing && ch is '/' && !PassesSlash(before) && !_sigil.IsActive && settings.SigilWordsDirect &&
-            _sigil.PassesThrough('/', before))
+        // 文章の入力欄の / や「/ キーで中黒」設定時は、変換ボックスに ・ として入れる。Space で / にすると、続く名前はそのまま渡す。
+        if (!modifier && !_controller.IsComposing && ch is '/' && (settings.SlashAsMiddleDot || !PassesSlash(before)) && !_sigil.IsActive && settings.SigilWordsDirect &&
+            (_sigil.PassesThrough('/', before) || (!Direct && settings.SlashAsMiddleDot && settings.InputStyle != InputStyle.Kana)))
         {
             _controller.MarkSlashAtStart();
         }

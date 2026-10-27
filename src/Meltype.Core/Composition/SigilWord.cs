@@ -88,6 +88,7 @@ public sealed class SigilWord
             // (前の文字を読めないアプリは空を返すことがある)。
             if (invisibleOnly) _boundary = true;
             else if (!string.IsNullOrEmpty(before)) _boundary = char.IsWhiteSpace(before[^1]);
+            else if (before is { Length: 0 }) _boundary = true;
             else if (before is not null && _boundary is null) _boundary = true;
             return _boundary == true;
         }

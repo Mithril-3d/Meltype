@@ -874,6 +874,16 @@ internal static class SessionFacadeTests
         var slashAfterDigit = Type(digitSession, "/", before: "")[0];
         Assert.True(slashAfterDigit.Consumed, "数字を消して空になった後の / も中黒になる");
         Assert.Equal("・", slashAfterDigit.View?.Text);
+
+        // 前の文字を読めないアプリ (before == null) で数字を消して / を打った場合も中黒になること
+        var nullDigitSession = new MeltypeSession(CompositionTests.Detector, new CompositionTests.FakeConverter(),
+            new CompositionOptions { Candidates = CandidateDictionary.Load(null), SlashAsMiddleDot = () => true },
+            () => new Settings { SlashAsMiddleDot = true, SigilWordsDirect = true });
+        Type(nullDigitSession, "1", before: null);
+        nullDigitSession.HandleKey(VirtualKeys.Back, '\b', false, false, false, false);
+        var slashAfterNullDigit = Type(nullDigitSession, "/", before: null)[0];
+        Assert.True(slashAfterNullDigit.Consumed, "before が null でも数字を消した後の / は中黒になる");
+        Assert.Equal("・", slashAfterNullDigit.View?.Text);
     }
 
     [Test]
