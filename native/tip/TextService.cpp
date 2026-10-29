@@ -936,7 +936,7 @@ bool TextService::WouldEat(ITfContext* context, UINT vk, LPARAM lParam, wchar_t&
     ch = CharOf(vk, 0);
     if (!open_ && directEnglishWord_) {
         bool continuesWord = (ch >= L'a' && ch <= L'z') || (ch >= L'A' && ch <= L'Z') ||
-                             (ch >= L'0' && ch <= L'9') || ch == L'@' || ch == L'_';
+                             ch == L'@' || ch == L'_';
         if (continuesWord) return pass(L"英語の単語の続き");
         directEnglishWord_ = false;
     }

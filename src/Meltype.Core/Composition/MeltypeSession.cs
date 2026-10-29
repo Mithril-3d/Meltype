@@ -413,8 +413,8 @@ public sealed class MeltypeSession
         var modifier = control || alt || command;
         var settings = _settings();
         if (Direct && _directModeDetection && _directEnglishWord &&
-            (ch is { } directChar && !char.IsAsciiLetterOrDigit(directChar) && directChar is not ('@' or '_') ||
-             before is { Length: > 0 } && !char.IsAsciiLetterOrDigit(before[^1]) && before[^1] is not ('@' or '_')))
+            (ch is { } directChar && !char.IsAsciiLetter(directChar) && directChar is not ('@' or '_') ||
+             before is { Length: > 0 } && !char.IsAsciiLetter(before[^1]) && before[^1] is not ('@' or '_')))
             _directEnglishWord = false;
         if ((Direct && (!_directModeDetection || !settings.DirectModeAutoDetect || _directEnglishWord)) || !settings.Enabled)
         {
