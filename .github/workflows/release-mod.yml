@@ -42,7 +42,7 @@ jobs:
       - name: Build Meltype
         shell: pwsh
         run: |
-          dotnet publish src/Meltype/Meltype.csproj -c Release -p:Version="$env:MOD_VERSION" -o stage_build
+          dotnet publish src/Meltype/Meltype.csproj -c Release -p:Version="$env:MOD_VERSION" -p:GITHUB_REF_TYPE="" -o stage_build
 
       - name: Assemble Package with New DLLs and clean hashes
         shell: pwsh
